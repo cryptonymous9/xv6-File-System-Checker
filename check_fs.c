@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/stat.h>
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
 
+#define stat xv6_custom_stat  // avoid clash with host (struct stat in stat.h)
 #include "types.h"
 #include "fs.h"
 #include "stat.h"
