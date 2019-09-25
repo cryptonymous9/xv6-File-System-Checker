@@ -177,6 +177,37 @@ int check_root()
     return 0;
 }
 
+int check_address(uint* addresses)
+{
+    struct dinode inode;
+    for(int i=0;i<NDIRECT+1;i++){                                        
+        if(inode.addrs[i] == 0) {continue;}                              
+        
+        if(addresses[inode.addrs[i]] == 1) {
+            fprintf(stderr,"ERROR: address used more than once\n");
+            return 1;}     
+        addresses[inode.addrs[i] ]=1;                                 
+    }
+    
+    int j;
+    uint address;
+    if(inode.addrs[NDIRECT] != 0){
+        for(j=0; j<NINDIRECT; j++){
+            if (lseek(fsfd, inode.addrs[NDIRECT] * BSIZE + j*sizeof(uint), SEEK_SET) != inode.addrs[NDIRECT] * BSIZE + j*sizeof(uint)){
+                perror("lseek");
+            }
+            if (read(fsfd, &address, sizeof(uint)) != sizeof(uint)){
+                perror("read");
+            }
+            if(address==0) {continue;}
+            
+            if(addresses[address] == 1) {return 1;}
+            addresses[address]=1;
+        }
+    }
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     if(argc<2)
