@@ -40,7 +40,7 @@ int check_root()
     memmove(&inode,buf,sizeof(inode));
     if(inode.type!=1)
     {
-        fprintf(stderr,"ERROR: root directory does not exist.");
+        fprintf(stderr,"ERROR: root directory does not exist.\n");
         close(fsfd);
         return 1;
     }
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 {
     if(argc<2)
     {
-        fprintf(stderr,"usage $fsck file_system_image.img");
+        fprintf(stderr,"usage $fsck file_system_image.img\n");
         exit(1);
     }
     fsfd = open(argv[1],O_RDONLY);
@@ -62,5 +62,6 @@ int main(int argc, char *argv[])
     if(check_root()==1)
         return 1;
     //error3 ends
-
+    printf("Your File System is intact\n");
+    return 0;
 }
