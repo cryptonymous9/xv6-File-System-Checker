@@ -17,6 +17,7 @@
 int fsfd;
 struct superblock sb;
 struct dinode inode;
+
 int corrupted_inode()
 {
     char buf[sizeof(struct dinode)];
@@ -34,6 +35,7 @@ int corrupted_inode()
     }
     return 0;
 }
+
 int find_directory_by_name(uint addr, char *name)
 {
     struct dirent buf;
@@ -45,6 +47,7 @@ int find_directory_by_name(uint addr, char *name)
     }
     return -1;
 }
+
 int check_directory()
 {
     int dot_inode=-1;
@@ -108,6 +111,7 @@ int check_directory()
     }
     return 0;
 }
+
 int check_root()
 {
     char buf[sizeof(struct dinode)];
@@ -166,6 +170,35 @@ int check_root()
         {
             fprintf(stderr,"ERROR: root directory does not exist.\n");
             return 1;
+        }
+    }
+    return 0;
+}
+
+int check_address(uint* addresses){
+    for(int i=0;i<NDIRECT+1;i++){                                        
+        if(inode.addrs[i] == 0) {continue;}                              
+        
+        if(addresses[inode.addrs[i]] == 1) {return 1;}     
+        addresses[inode.addrs[i] ]=1;                                 
+    }
+    
+    int j;
+    uint address;
+    if(inode.addrs[NDIRECT] != 0){
+        for(j=0; j<NINDIRECT; j++){
+            if (lseek(fsfd, inode.addrs[NDIRECT] * BSIZE + j*sizeof(uint), SEEK_SET) != inode.addrs[NDIRECT] * BSIZE + j*sizeof(uint)){
+                fprintf(stderr, "Seek failed.\n", );
+                exit(1);
+            }
+            if (read(fsfd, &address, sizeof(uint)) != sizeof(uint)){
+                fprintf(stderr, "Read failed.\n", );
+                exit(1);
+            }
+            if(address==0) {continue;}
+            
+            if(addresses[address] == 1) {return 1;}
+            addresses[address]=1;
         }
     }
     return 0;
