@@ -179,7 +179,9 @@ int check_address(uint* addresses){
     for(int i=0;i<NDIRECT+1;i++){                                        
         if(inode.addrs[i] == 0) {continue;}                              
         
-        if(addresses[inode.addrs[i]] == 1) {return 1;}     
+        if(addresses[inode.addrs[i]] == 1) {
+            fprintf(stderr,"ERROR: address used more than once\n");
+            return 1;}     
         addresses[inode.addrs[i] ]=1;                                 
     }
     
@@ -188,12 +190,10 @@ int check_address(uint* addresses){
     if(inode.addrs[NDIRECT] != 0){
         for(j=0; j<NINDIRECT; j++){
             if (lseek(fsfd, inode.addrs[NDIRECT] * BSIZE + j*sizeof(uint), SEEK_SET) != inode.addrs[NDIRECT] * BSIZE + j*sizeof(uint)){
-                fprintf(stderr, "Seek failed.\n", );
-                exit(1);
+                perror("lseek");
             }
             if (read(fsfd, &address, sizeof(uint)) != sizeof(uint)){
-                fprintf(stderr, "Read failed.\n", );
-                exit(1);
+                perror("read");
             }
             if(address==0) {continue;}
             
