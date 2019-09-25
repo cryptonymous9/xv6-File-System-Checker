@@ -21,6 +21,7 @@ int corrupted_inode()
     lseek(fsfd,sb.inodestart*BSIZE,SEEK_SET);
     for (int i=0;i<sb.ninodes;i++)
     {
+        read(fsfd,buf,sizeof(inode));
         memmove(&inode, buf, sizeof(inode));
         if(inode.type!=0 && inode.type!=T_FILE && inode.type!=T_DIR && inode.type!=T_DEV)
         {
