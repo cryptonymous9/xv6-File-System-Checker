@@ -16,18 +16,20 @@
 
 int fsfd;
 struct superblock sb;
-struct dinode inode;
+//struct dinode inode;
 int corrupted_inode()
 {
+    struct dinode inode;
     char buf[sizeof(struct dinode)];
     lseek(fsfd,sb.inodestart*BSIZE,SEEK_SET);
-    for (int i=0;i<sb.ninodes;i++)
+    for (int i=0;i<(int)sb.ninodes;i++)
     {
+        lseek(fsfd,sb.inodestart*BSIZE+i*sizeof(struct dinode),SEEK_SET);
         read(fsfd,buf,sizeof(inode));
         memmove(&inode, buf, sizeof(inode));
         if(inode.type!=0 && inode.type!=T_FILE && inode.type!=T_DIR && inode.type!=T_DEV)
         {
-            fprintf(stderr,"ERROR: bad inode.");
+            printf("ERROR: bad inode.");
             close(fsfd);
             return 1;
         }
@@ -36,6 +38,7 @@ int corrupted_inode()
 }
 int find_directory_by_name(uint addr, char *name)
 {
+    struct dinode inode;
     struct dirent buf;
     lseek(fsfd,addr*BSIZE,SEEK_SET);
     read(fsfd,&buf,sizeof(struct dirent));
@@ -47,10 +50,11 @@ int find_directory_by_name(uint addr, char *name)
 }
 int check_directory()
 {
+    struct dinode inode;
     int dot_inode=-1;
     int ddot_inode=-1;
     char buf[sizeof(struct dinode)];
-    lseek(fsfd,sb.inodestart*BSIZE,SEEK_SET);
+    lseek(fsfd,sb.inodestart*BSIZE+sizeof(struct dinode),SEEK_SET);
     for (int i=0;i<sb.ninodes;i++)
     {
         read(fsfd,buf,sizeof(inode));
@@ -70,7 +74,7 @@ int check_directory()
             {
                 if (dot_inode!=-1 && dot_inode!=i)
                 {
-                    fprintf(stderr,"ERROR: directory not properly formatted.\n");
+                    printf("ERROR: directory not properly formatted.\n");
                     return 1;
                 }
                 else if(inode.addrs[NDIRECT]!=0)
@@ -89,19 +93,19 @@ int check_directory()
                     }
                     if(dot_inode!=i || dot_inode==-1 || ddot_inode==-1)
                     {
-                        fprintf(stderr,"ERROR: directory not properly formatted.\n");
+                        printf("ERROR: directory not properly formatted.\n");
                         return 1;
                     }
                 }
                 else
                 {
-                    fprintf(stderr,"ERROR: directory not properly formatted.\n");
+                    printf("ERROR: directory not properly formatted.\n");
                     return 1;
                 }
             }
             if(dot_inode!=i || dot_inode==-1 || ddot_inode==-1)
             {
-                fprintf(stderr,"ERROR: directory not properly formatted.\n");
+                printf("ERROR: directory not properly formatted.\n");
                 return 1;
             }
         }
@@ -110,17 +114,19 @@ int check_directory()
 }
 int check_root()
 {
+    struct dinode inode;
     char buf[sizeof(struct dinode)];
-    lseek(fsfd,sb.inodestart*BSIZE,SEEK_SET);
+    lseek(fsfd,sb.inodestart*BSIZE+sizeof(struct dinode),SEEK_SET);
     read(fsfd,buf,sizeof(struct dinode));
     memmove(&inode,buf,sizeof(inode));
-    if(inode.type!=T_DIR)
+    printf("%d",inode.type);
+    if(inode.type!=1)
     {
-        fprintf(stderr,"ERROR: root directory does not exist.\n");
+        printf("ERROR: root directory does not exist.\n");
         close(fsfd);
         return 1;
     }
-    else
+    /*else
     {
         int dot_inode=-1;
         int ddot_inode=-1;
@@ -138,7 +144,7 @@ int check_root()
         {
             if(dot_inode!=1 && ddot_inode!=1)
             {
-                fprintf(stderr,"ERROR: root directory does not exist.\n");
+                printf("ERROR: root directory does not exist.\n");
                 return 1;
             }
         }
@@ -148,7 +154,7 @@ int check_root()
             uint indbuf;
             for(int k=0;k<NINDIRECT;k++)
             {
-                read(fsfd,&indbuf,sizeof(uint));
+                            read(fsfd,&indbuf,sizeof(uint));
                 if(dot_inode==-1)
                     dot_inode=find_directory_by_name(indbuf,".");
                 if(ddot_inode==-1)
@@ -158,16 +164,16 @@ int check_root()
             }
             if(dot_inode!=1 || dot_inode==-1 || ddot_inode==-1 || ddot_inode!=1)
             {
-                fprintf(stderr,"ERROR: root directory does not exist.\n");
+                printf("ERROR: root directory does not exist.\n");
                 return 1;
             }
         }
         else
         {
-            fprintf(stderr,"ERROR: root directory does not exist.\n");
+            printf("ERROR: root directory does not exist.\n");
             return 1;
         }
-    }
+    }*/
     return 0;
 }
 
@@ -175,12 +181,16 @@ int main(int argc, char *argv[])
 {
     if(argc<2)
     {
-        fprintf(stderr,"usage $fsck file_system_image.img\n");
+        printf("usage $fsck file_system_image.img\n");
         exit(1);
     }
     fsfd = open(argv[1],O_RDONLY);
+    lseek(fsfd,BSIZE,SEEK_SET);
+    uchar buf[BSIZE];
+    read(fsfd,buf,BSIZE);
+    memmove(&sb,buf,sizeof(sb));
     //error 1 
-    if(corrupted_inode==1)
+    if(corrupted_inode()==1)
         return 1;
     //error3 starts
     if(check_root()==1)
