@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
     }
     fsfd = open(argv[1],O_RDONLY);
     //error 1 
-    if(corrupted_inode==1)
+    if(corrupted_inode()==1)
         return 1;
     //error3 starts
     if(check_root()==1)
