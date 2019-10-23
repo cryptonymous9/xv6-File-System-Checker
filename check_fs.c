@@ -17,7 +17,8 @@
 int fsfd;
 struct superblock sb;
 //struct dinode inode;
-int corrupted_inode()
+/*This checks for corrupted i node */
+int corrupted_inode()        //This code works NO need to mess with it.
 {
     struct dinode inode;
     char buf[sizeof(struct dinode)];
@@ -36,18 +37,27 @@ int corrupted_inode()
     }
     return 0;
 }
+/*Function to find directory inode by name*/
 int find_directory_by_name(uint addr, char *name)
 {
     struct dinode inode;
     struct dirent buf;
     lseek(fsfd,addr*BSIZE,SEEK_SET);
-    read(fsfd,&buf,sizeof(struct dirent));
-    if(strncmp(name,buf.name,DIRSIZ)==0)
+    //read(fsfd,&buf,sizeof(struct dirent));
+    for(int i=0;i<BSIZE/sizeof(struct dirent);i++)
     {
-        return buf.inum;
+        read(fsfd,&buf,sizeof(struct dirent));
+        if(buf.inum==0)
+            continue;
+        if(strncmp(name,buf.name,DIRSIZ)==0)
+        {
+            return buf.inum;
+        }
     }
     return -1;
 }
+
+/*Check the directories for errors*/
 int check_directory()
 {
     struct dinode inode;
