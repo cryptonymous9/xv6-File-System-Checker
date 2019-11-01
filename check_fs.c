@@ -37,7 +37,7 @@ int corrupted_inode()        //This code works NO need to mess with it.
 
         //This checks for error 12
         //No extra links allowed for directories, each directory only appears in one other directory
-        if(indoe.type == T_DIR && inode.nlink > 1)
+        if(inode.type == T_DIR && inode.nlink > 1)
         {
             printf("ERROR: directory appears more than once in file system.");
             close(fsfd);
