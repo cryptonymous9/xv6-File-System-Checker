@@ -64,7 +64,7 @@ int check_directory()
     int dot_inode=-1;
     int ddot_inode=-1;
     char buf[sizeof(struct dinode)];
-    lseek(fsfd,sb.inodestart*BSIZE+sizeof(struct dinode)+sizeof(struct dinode),SEEK_SET);
+    lseek(fsfd,sb.inodestart*BSIZE+sizeof(struct dinode),SEEK_SET);
     for (int i=0;i<sb.ninodes;i++)
     {
         read(fsfd,buf,sizeof(inode));
@@ -187,6 +187,7 @@ int check_root()
     return 0;
 }
 
+/*Error 7 each DAddress must be used only once.*/
 int check_address(uint* addresses)
 {
     struct dinode inode;
