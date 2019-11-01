@@ -34,7 +34,6 @@ int corrupted_inode()        //This code works NO need to mess with it.
             close(fsfd);
             return 1;
         }
-
         //This checks for error 12
         //No extra links allowed for directories, each directory only appears in one other directory
         if(inode.type == T_DIR && inode.nlink > 1)
@@ -66,6 +65,43 @@ int find_directory_by_name(uint addr, char *name)
     return -1;
 }
 
+/*error 5*/
+int check_inode_addr(struct dinode inode)
+{
+    uint buf;
+    uint abuf;
+    int offset;
+    for(int j=0;j<NDIRECT;j++)
+    {
+        lseek(fsfd,sb.bmapstart+inode.addrs[j]/8,SEEK_SET);
+        read(fsfd,&buf,1);
+        offset=inode.addrs[j]%8;
+        buf=(buf>>offset)%2;
+        if(buf==0)
+        {
+            printf("ERROR: address used by inode but marked free in bitmap.");
+            return 1;
+        }
+    }
+    if(inode.addrs[NDIRECT]!=0)
+    {
+        lseek(fsfd,inode.addrs[NDIRECT]*BSIZE,SEEK_SET);
+        for(int i=0;i<NINDIRECT;i++)
+        {
+            read(fsfd,&abuf,sizeof(uint));
+            offset=abuf%8;
+            lseek(fsfd,sb.bmapstart+abuf/8,SEEK_SET);
+            read(fsfd,&buf,1);
+            buf=(buf>>offset)%2;
+            if(buf==0)
+            {
+                printf("ERROR: address used by inode but marked free in bitmap.");
+                return 1;
+            }
+        }
+    }
+}
+
 /*Check the directories for errors*/
 int check_directory()
 {
@@ -73,7 +109,7 @@ int check_directory()
     int dot_inode=-1;
     int ddot_inode=-1;
     char buf[sizeof(struct dinode)];
-    lseek(fsfd,sb.inodestart*BSIZE+sizeof(struct dinode),SEEK_SET);
+    lseek(fsfd,sb.inodestart*BSIZE,SEEK_SET);
     for (int i=0;i<sb.ninodes;i++)
     {
         read(fsfd,buf,sizeof(inode));
@@ -195,6 +231,7 @@ int check_root()
     }*/
     return 0;
 }
+
 
 /*Error 7 each DAddress must be used only once.*/
 int check_address(uint* addresses)
