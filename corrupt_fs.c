@@ -112,7 +112,7 @@ int main(int argc, char *argv[]){
   sb.logstart = xint(2);
 
   // ERROR 1: bad inode
-  printf("%d",error_no);
+  printf("%d ",error_no);
   if(error_no!=1){
   
   sb.inodestart = xint(2+nlog);

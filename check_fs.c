@@ -77,7 +77,7 @@ int check_address(uint* address, struct dinode inode)
         if(inode.addrs[i] == 0) {continue;}                              
         
         if(address[inode.addrs[i]] == 1) {
-            fprintf(stderr,"ERROR: address used more than once\n");
+            printf("ERROR: address used more than once\n");
             return 1;}     
         address[inode.addrs[i] ]=1;                                 
     }
@@ -139,19 +139,20 @@ int check_inode_addr(struct dinode inode)
 }
 
 
-/*Check the directories for errors*/
+/*ERROR 4: Check the directories for errors*/
 int check_directory(uint *address)
 {
     struct dinode inode;
     int dot_inode=-1;
     int ddot_inode=-1;
     char buf[sizeof(struct dinode)];
-    lseek(fsfd,sb.inodestart*BSIZE+sizeof(struct dinode),SEEK_SET);
+    lseek(fsfd,sb.inodestart*BSIZE,SEEK_SET);
     for (int i=0;i<sb.ninodes;i++)
     {
-        if (check_address(address, inode)){
+        if (check_address(address, inode))
+        {
             return 1;
-    }
+        }
         read(fsfd,buf,sizeof(inode));
         memmove(&inode, buf, sizeof(inode));
         if(inode.type==T_DIR)
@@ -169,7 +170,7 @@ int check_directory(uint *address)
             {
                 if (dot_inode!=-1 && dot_inode!=i)
                 {
-                    printf("ERROR: directory not properly formatted.\n");
+                    printf("ERROR 1: directory not properly formatted.\n");
                     return 1;
                 }
                 else if(inode.addrs[NDIRECT]!=0)
@@ -188,19 +189,20 @@ int check_directory(uint *address)
                     }
                     if(dot_inode!=i || dot_inode==-1 || ddot_inode==-1)
                     {
-                        printf("ERROR: directory not properly formatted.\n");
+                        printf("ERROR 2: directory not properly formatted.\n");
                         return 1;
                     }
                 }
                 else
                 {
-                    printf("ERROR: directory not properly formatted.\n");
+                    printf("ERROR 3: directory not properly formatted.\n");
+                    printf("%d %d\n", dot_inode, ddot_inode);
                     return 1;
                 }
             }
             if(dot_inode!=i || dot_inode==-1 || ddot_inode==-1)
             {
-                printf("ERROR: directory not properly formatted.\n");
+                printf("ERROR 4: directory not properly formatted.\n");
                 return 1;
             }
         }
@@ -214,7 +216,7 @@ int check_root()
     lseek(fsfd,sb.inodestart*BSIZE+sizeof(struct dinode),SEEK_SET);
     read(fsfd,buf,sizeof(struct dinode));
     memmove(&inode,buf,sizeof(inode));
-    printf("%d",inode.type);
+    //printf("%d",inode.type);
     if(inode.type!=1)
     {
         printf("ERROR: root directory does not exist.\n");
@@ -278,39 +280,39 @@ int check_block_inuse(uint* address){
 
     // Position od datablock in Bitmap
     // Bitmapstart(in Bytes) + number of bytes in Bitmap(# total blocks%8) - number of bytes of dataBlocks(# dataBlocks%8) 
-	int db_inbmap =sb.bmapstart*BSIZE + sb.size/8 - sb.nblocks/8;
-	
+    int db_inbmap =sb.bmapstart*BSIZE + sb.size/8 - sb.nblocks/8;
+    
     // Current address
-	int current_block=(sb.bmapstart + 1);
+    int current_block=(sb.bmapstart + 1);
 
     // Seeking cursor to the first byte of DataBlock in BitMap
-	lseek(fsfd, db_inbmap, SEEK_SET);
+    lseek(fsfd, db_inbmap, SEEK_SET);
 
     uint bit_to_check; 
-	int byte_to_check;
-	
+    int byte_to_check;
+    
     // taking Bytewise addresses from BitMap
     for (int i=current_block; i<sb.size; i+=8){
 
         // reading 1 Byte => it will contain usage info. about 8 DataBlocks
-		read(fsfd, &byte_to_check, 1);
-		for (int x=0; x<8; x++){
+        read(fsfd, &byte_to_check, 1);
+        for (int x=0; x<8; x++){
 
             //  Reading last bit step-by-step each time in the corresponding Byte   
-			bit_to_check = (byte_to_check >> x)%2;
+            bit_to_check = (byte_to_check >> x)%2;
 
             // bit !=0 => when DataBlock marked as in-use in BitMap
-			if (bit_to_check!=0){
+            if (bit_to_check!=0){
                 // address[current_block] is 0 when it is not in use
-				if(address[current_block]==0){
+                if(address[current_block]==0){
                     printf("ERROR: bitmap marks block in use but it is not in use.");
-					return 1;
-				}
-			}
+                    return 1;
+                }
+            }
             current_block++;
-		}
-	} 
-	return 0;
+        }
+    } 
+    return 0;
 }
 
 
@@ -322,11 +324,11 @@ int main(int argc, char *argv[])
 
     
     uint address[sb.size];
-	// initializing array address with zeores
+    // initializing array address with zeores
     // For error involving blocks-in-use
     for(int i=0;i<sb.size;i++) {
-		address[i]=0;
-	}
+        address[i]=0;
+    }
 
     if(argc<2)
     {
