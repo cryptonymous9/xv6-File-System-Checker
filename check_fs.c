@@ -48,6 +48,7 @@ int corrupted_inode()        //This code works NO need to mess with it.
     }
     return 0;
 }
+
 /*Function to find directory inode by name*/
 int find_directory_by_name(uint addr, char *name)
 {
@@ -149,12 +150,13 @@ int check_directory(uint *address)
     lseek(fsfd,sb.inodestart*BSIZE,SEEK_SET);
     for (int i=0;i<sb.ninodes;i++)
     {
+        lseek(fsfd, sb.inodestart*BSIZE + i*sizeof(struct dinode), SEEK_SET)
         if (check_address(address, inode))
         {
             return 1;
         }
-        read(fsfd,buf,sizeof(inode));
-        memmove(&inode, buf, sizeof(inode));
+        read(fsfd,buf,sizeof(struct dinode));
+        memmove(&inode, buf, sizeof(struct dinode));
         if(inode.type==T_DIR)
         {
             for(int j=0;j<NDIRECT;j++)

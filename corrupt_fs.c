@@ -291,8 +291,8 @@ void balloc(int used){
   printf("balloc: first %d blocks have been allocated\n", used);
   assert(used < BSIZE*8);
   
-  // ERROR 7: bitmap marks block in use but it is not in use
-  if(error_no!=7){
+  // ERROR 6: bitmap marks block in use but it is not in use
+  if(error_no!=6){
   
   bzero(buf, BSIZE);
   
@@ -306,8 +306,8 @@ void balloc(int used){
 
   printf("balloc: write bitmap block at sector %d\n", sb.bmapstart);
   
-  // ERROR 6: address used by inode but marked free in bitmap
-  if(error_no!=6){  
+  // ERROR 5: address used by inode but marked free in bitmap
+  if(error_no!=5){  
   wsect(sb.bmapstart, buf);
   }
 
