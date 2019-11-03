@@ -69,32 +69,37 @@ int find_directory_by_name(uint addr, char *name)
     return -1;
 }
 
-/*Error 7 each Direct Address must be used only once.*/
+/*Error 7/8 each address must be used only once.*/
 int check_address(uint* address, struct dinode inode)
 {  
-    for(int i=0;i<NDIRECT+1;i++){
+    for(int i=0;i<NDIRECT;i++)
+    {
 
         if(inode.addrs[i] == 0) {continue;}                              
         
-        if(address[inode.addrs[i]] == 1) {
-            printf("ERROR: address used more than once\n");
-            return 1;}     
-        address[inode.addrs[i] ]=1;                                 
+        if(address[inode.addrs[i]] == 1)
+        {
+            printf("ERROR: direct address used more than once\n");
+            return 1;
+        }     
+        address[inode.addrs[i]]=1;                                 
     }
     
-    int j;
     uint addr;
-    if(inode.addrs[NDIRECT] != 0){
-        for(j=0; j<NINDIRECT; j++){
-            if (lseek(fsfd, inode.addrs[NDIRECT] * BSIZE + j*sizeof(uint), SEEK_SET) != inode.addrs[NDIRECT] * BSIZE + j*sizeof(uint)){
-                perror("lseek");
-            }
-            if (read(fsfd, &addr, sizeof(uint)) != sizeof(uint)){
-                perror("read");
-            }
+    if(inode.addrs[NDIRECT] != 0)
+    {
+        for(int j=0; j<NINDIRECT; j++)
+        {
+            lseek(fsfd, inode.addrs[NDIRECT] * BSIZE + j*sizeof(uint), SEEK_SET);
+            read(fsfd, &addr, sizeof(uint));
+
             if(addr==0) {continue;}
             
-            if(address[addr] == 1) {return 1;}
+            if(address[addr] == 1)
+            {
+                printf("ERROR: indirect address used more than once\n");
+                return 1;
+            }
             address[addr]=1;
         }
     }
@@ -150,10 +155,10 @@ int check_directory(uint *address)
     for (int i=0;i<sb.ninodes;i++)
     {
         lseek(fsfd, sb.inodestart*BSIZE + i*sizeof(struct dinode), SEEK_SET);
-        // if (check_address(address, inode))
-        // {
-        //     return 1;
-        // }
+        if (check_address(address, inode))
+        {
+            return 1;
+        }
         read(fsfd,buf,sizeof(struct dinode));
         memmove(&inode, buf, sizeof(struct dinode));
         if(inode.type==T_DIR)
@@ -346,6 +351,7 @@ int main(int argc, char *argv[])
     if(corrupted_inode()==1)
         return 1;
     //error3 starts
+
     if(check_root()==1)
         return 1;
     //error3 ends
