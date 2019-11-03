@@ -69,10 +69,9 @@ int find_directory_by_name(uint addr, char *name)
     return -1;
 }
 
-/*Error 7 each DAddress must be used only once.*/
+/*Error 7 each Direct Address must be used only once.*/
 int check_address(uint* address, struct dinode inode)
 {  
-
     for(int i=0;i<NDIRECT+1;i++){
 
         if(inode.addrs[i] == 0) {continue;}                              
@@ -147,14 +146,14 @@ int check_directory(uint *address)
     int dot_inode=-1;
     int ddot_inode=-1;
     char buf[sizeof(struct dinode)];
-    lseek(fsfd,sb.inodestart*BSIZE,SEEK_SET);
+    //lseek(fsfd,sb.inodestart*BSIZE,SEEK_SET);
     for (int i=0;i<sb.ninodes;i++)
     {
-        lseek(fsfd, sb.inodestart*BSIZE + i*sizeof(struct dinode), SEEK_SET)
-        if (check_address(address, inode))
-        {
-            return 1;
-        }
+        lseek(fsfd, sb.inodestart*BSIZE + i*sizeof(struct dinode), SEEK_SET);
+        // if (check_address(address, inode))
+        // {
+        //     return 1;
+        // }
         read(fsfd,buf,sizeof(struct dinode));
         memmove(&inode, buf, sizeof(struct dinode));
         if(inode.type==T_DIR)
@@ -198,7 +197,7 @@ int check_directory(uint *address)
                 else
                 {
                     printf("ERROR 3: directory not properly formatted.\n");
-                    printf("%d %d\n", dot_inode, ddot_inode);
+                    printf("%d %d %d\n", dot_inode, ddot_inode, inode.addrs[NDIRECT]);
                     return 1;
                 }
             }
@@ -211,6 +210,7 @@ int check_directory(uint *address)
     }
     return 0;
 }
+
 int check_root()
 {
     struct dinode inode;

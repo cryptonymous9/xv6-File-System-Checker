@@ -1,5 +1,5 @@
 #!/bin/sh
-echo Enter the Error number by which you want to corrupt the File System - [ 1 3 4 6 7 9 ]
+echo Enter the Error number by which you want to corrupt the File System - [ 1 3 4 5 6 9 ]
 read error  
 ./corrupt_fs fs.img $error
 echo "-----------------"
