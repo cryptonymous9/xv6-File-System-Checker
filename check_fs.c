@@ -155,12 +155,12 @@ int check_directory(uint *address)
     for (int i=0;i<sb.ninodes;i++)
     {
         lseek(fsfd, sb.inodestart*BSIZE + i*sizeof(struct dinode), SEEK_SET);
+        read(fsfd,buf,sizeof(struct dinode));
+        memmove(&inode, buf, sizeof(struct dinode));
         if (check_address(address, inode))
         {
             return 1;
         }
-        read(fsfd,buf,sizeof(struct dinode));
-        memmove(&inode, buf, sizeof(struct dinode));
         if(inode.type==T_DIR)
         {
             for(int j=0;j<NDIRECT;j++)
@@ -174,7 +174,7 @@ int check_directory(uint *address)
             }
             if(dot_inode==-1 || ddot_inode==-1)
             {
-                if (dot_inode!=-1 && dot_inode!=i)
+                if (dot_inode!=-1 && dot_inode!=i+1)
                 {
                     printf("ERROR 1: directory not properly formatted.\n");
                     return 1;
@@ -193,7 +193,7 @@ int check_directory(uint *address)
                         if(dot_inode!=-1 && ddot_inode!=-1)
                             break;
                     }
-                    if(dot_inode!=i || dot_inode==-1 || ddot_inode==-1)
+                    if(dot_inode!=i+1 || dot_inode==-1 || ddot_inode==-1)
                     {
                         printf("ERROR 2: directory not properly formatted.\n");
                         return 1;
