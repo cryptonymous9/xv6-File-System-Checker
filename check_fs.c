@@ -69,14 +69,19 @@ int find_directory_by_name(uint addr, char *name)
     return -1;
 }
 
-/*Error 7/8 each address must be used only once.*/
+/*Error 7/8 each address must be used only once. Error 2 bad direct or indirect address*/
 int check_address(uint* address, struct dinode inode)
-{  
+{ 
+    int dstart=sb.bmapstart+1; 
     for(int i=0;i<NDIRECT;i++)
     {
 
         if(inode.addrs[i] == 0) {continue;}                              
-        
+        if(inode.addrs[i]<dstart || inode.addrs[i]>=dstart+sb.nblocks)
+        {
+            printf("ERROR: bad direct address in inode.");
+            return 1;
+        }
         if(address[inode.addrs[i]] == 1)
         {
             printf("ERROR: direct address used more than once\n");
@@ -94,7 +99,11 @@ int check_address(uint* address, struct dinode inode)
             read(fsfd, &addr, sizeof(uint));
 
             if(addr==0) {continue;}
-            
+            if(addr<dstart || addr>=dstart+sb.nblocks)
+            {
+                printf("ERROR: bad indirect address in inode.");
+                return 1;
+            }
             if(address[addr] == 1)
             {
                 printf("ERROR: indirect address used more than once\n");
