@@ -36,6 +36,19 @@ int corrupted_inode()        //This code works NO need to mess with it.
             close(fsfd);
             return 1;
         }
+        
+        //This checks for error 11
+        //Refrence counts (number of links) for regular files match the number of times file is referred to in directories (i.e., hard links work correctly)
+        //ERROR: bad refrence count for file
+        if(inode.type == T_FILE)
+        {
+            if(inode.nlink != check_links(inode, i))
+            {
+                printf("ERROR: bad reference count for file.");
+                close(fsfd);
+                return 1;
+            }
+        }
 
         //This checks for error 12
         //No extra links allowed for directories, each directory only appears in one other directory
