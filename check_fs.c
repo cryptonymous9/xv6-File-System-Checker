@@ -471,17 +471,22 @@ int inode_check_directory(uint target_inum){
         
         // looping through all the direct-pointers
         for(int d_ptr=0; d_ptr<NDIRECT; d_ptr++){
+            
             // skipping if it is empty
             if(compare_inode.addrs[d_ptr]==0) {continue;}
 
             //checking if in-use target inode number present in the compare DIR inode
-            else if(check_inum_indir(compare_inode.addrs[d_ptr], target_inum)==0){return 0;}    
+            else if(check_inum_indir(compare_inode.addrs[d_ptr], target_inum)==0){return 0;}  
+            
         }
         
         // For all the indirect addresses
         uint ind_DIR_address;
-        // looinf through all the indirect-pointers
+
+        // looping through all the indirect-pointers
+        
         for(int ind_ptr=0; ind_ptr<NINDIRECT; ind_ptr++){
+        
             lseek(fsfd, compare_inode.addrs[NDIRECT] * BSIZE + ind_ptr*sizeof(uint), SEEK_SET);
             read(fsfd, &ind_DIR_address, sizeof(uint));
 
@@ -535,12 +540,21 @@ int main(int argc, char *argv[])
         return 1;
     }
     // error6 ends
-    
+
     //error 9
+    struct dinode current_inode;
+
     // looping through all inodes to check all the in-use inodes
     for (int current_inum = 0; current_inum < ((int) sb.ninodes); current_inum++){
-        if (inode_check_directory(current_inum)){
+        lseek(fsfd, sb.inodestart * BSIZE + current_inum * sizeof(struct dinode), SEEK_SET); 
+        read(fsfd, buf, sizeof(struct dinode))!=sizeof(struct dinode);
+        memmove(&current_inode, buf, sizeof(current_inode));
+
+        // only checking if the inode is in use
+        if (current_inode.type!=0){
+            if (inode_check_directory(current_inum)){
             return 1;
+            }
         }    
     }
 
