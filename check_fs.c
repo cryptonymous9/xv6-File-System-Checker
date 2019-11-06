@@ -176,42 +176,6 @@ int check_inode_ref(struct dinode inode)
 }
 
 
-/*error 5*/
-int check_inode_addr(struct dinode inode)
-{
-    uint buf;
-    uint abuf;
-    int offset;
-    for(int j=0;j<NDIRECT;j++)
-    {
-        lseek(fsfd,sb.bmapstart+inode.addrs[j]/8,SEEK_SET);
-        read(fsfd,&buf,1);
-        offset=inode.addrs[j]%8;
-        buf=(buf>>offset)%2;
-        if(buf==0)
-        {
-            printf("ERROR: address used by inode but marked free in bitmap.\n");
-            return 1;
-        }
-    }
-    if(inode.addrs[NDIRECT]!=0)
-    {
-        lseek(fsfd,inode.addrs[NDIRECT]*BSIZE,SEEK_SET);
-        for(int i=0;i<NINDIRECT;i++)
-        {
-            read(fsfd,&abuf,sizeof(uint));
-            offset=abuf%8;
-            lseek(fsfd,sb.bmapstart+abuf/8,SEEK_SET);
-            read(fsfd,&buf,1);
-            buf=(buf>>offset)%2;
-            if(buf==0)
-            {
-                printf("ERROR: address used by inode but marked free in bitmap.\n");
-                return 1;
-            }
-        }
-    }
-}
 
 
 /*ERROR 4: Check the directories for errors*/
@@ -291,6 +255,9 @@ int check_directory(uint *address)
     return 0;
 }
 
+/*
+ERROR 
+*/
 int check_root()
 {
     struct dinode inode;
@@ -397,14 +364,62 @@ int check_block_inuse(uint* address){
     return 0;
 }
 
-//Related to error 11
+/*ERROR 5:
+Checks if for in-use inodes, each address in use is also marked in use in the bitmap.
+
+Returns: 'ERROR: address used by inode but marked free in bitmap.' if error exists
+*/
+int check_inode_addr(struct dinode inode)
+{
+    int db_inbmap =sb.bmapstart*BSIZE + sb.size/8 - sb.nblocks/8;
+    
+    // Current address
+    int current_block=(sb.bmapstart + 1);
+
+    // Seeking cursor to the first byte of DataBlock in BitMap
+    lseek(fsfd, db_inbmap, SEEK_SET);
+
+    uint bit_to_check; 
+    int byte_to_check;
+    
+    // taking Bytewise addresses from BitMap
+    for (int i=current_block; i<sb.size; i+=8){
+
+        // reading 1 Byte => it will contain usage info. about 8 DataBlocks
+        read(fsfd, &byte_to_check, 1);
+        for (int x=0; x<8; x++){
+
+            //  Reading last bit step-by-step each time in the corresponding Byte   
+            bit_to_check = (byte_to_check >> x)%2;
+
+            // bit !=0 => when DataBlock marked as in-use in BitMap
+            if (address[current_block]!=0){
+                // address[current_block] is 0 when it is not in use
+                if(bit_to_check==5){
+                    printf("ERROR: bitmap marks block in use but it is not in use.\n");
+                    return 1;
+                }
+            }
+            current_block++;
+        }
+    } 
+    return 0;
+}
+
+
+/* 
+ERROR 11: 
+Reference counts (number of links) for regular files match the number of times file is referred to in directories
+
+Consists of two functions -
+1. traverse_dir_by_inum(): helper to iterate over directory based on inum
+2. check_links(): checks all links from an inode
+*/
+
+// Error 11 (Helper)
 int traverse_dir_by_inum(uint addr, ushort inum)
 {
-    if(lseek(fsfd, addr*BSIZE, SEEK_SET) != addr*BSIZE)
-    {
-        perror("lseek");
-        exit(1);
-    }
+    lseek(fsfd, addr*BSIZE, SEEK_SET)
     struct dirent buf;
     int i;
     for(int i=0;i<BSIZE/sizeof(struct dirent);i++)
@@ -418,8 +433,7 @@ int traverse_dir_by_inum(uint addr, ushort inum)
     return 1;
 }
 
-
-//Related to error 11
+//Error 11 (Main)
 int check_links(struct dinode current_inode, uint current_inum)
 {
     int inum;
@@ -487,12 +501,17 @@ int check_links(struct dinode current_inode, uint current_inum)
             }
         }
     }
-
-
     return count;
 }
 
-// For error 9
+
+/* ERROR 9:
+For all inodes marked in use, each must be referred to in at least one directory. 
+
+Returns: 'ERROR: inode marked use but not found in a directory.' if error found
+*/
+
+// Error 9 (Helper)
 int check_inum_indir(uint addr, ushort inum){   
     lseek(fsfd, addr*BSIZE, SEEK_SET);
     struct dirent buf;
@@ -505,7 +524,7 @@ int check_inum_indir(uint addr, ushort inum){
     return 1;
 }   
 
-// Error 9:
+// Error 9 (Main)
 int inode_check_directory(uint target_inum){
 
     // DIR-inode to compare
@@ -539,7 +558,7 @@ int inode_check_directory(uint target_inum){
         // looping through all the indirect-pointers
         
         for(int ind_ptr=0; ind_ptr<NINDIRECT; ind_ptr++){
-        
+            
             lseek(fsfd, compare_inode.addrs[NDIRECT] * BSIZE + ind_ptr*sizeof(uint), SEEK_SET);
             read(fsfd, &ind_DIR_address, sizeof(uint));
 
@@ -553,6 +572,9 @@ int inode_check_directory(uint target_inum){
     printf("ERROR: inode marked use but not found in a directory\n");
     return 1;
 }
+
+
+
 
 int main(int argc, char *argv[])
 {   
@@ -606,7 +628,7 @@ int main(int argc, char *argv[])
         // only checking if the inode is in use
         if (current_inode.type!=0){
             if (inode_check_directory(current_inum)){
-            return 1;
+                return 1;
             }
         }    
     }
