@@ -537,7 +537,10 @@ int main(int argc, char *argv[])
     // if(check_directory(address)==1){
     //     return 1;
     // }
-
+    // error 5 
+    if(check_inode_addr(address)==1)
+        return 1;
+    //
     // error6 starts
     if (check_block_inuse(address)){
         return 1;
