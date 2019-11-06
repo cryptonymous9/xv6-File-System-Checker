@@ -239,9 +239,12 @@ int check_directory(uint *address)
         lseek(fsfd, sb.inodestart*BSIZE + i*sizeof(struct dinode), SEEK_SET);
         read(fsfd,buf,sizeof(struct dinode));
         memmove(&inode, buf, sizeof(struct dinode));
-        if (check_address(address, inode))
+        if(inode.type!=0)
         {
-            return 1;
+            if (check_address(address, inode))
+            {
+                return 1;
+            }
         }
         if(inode.type==T_DIR)
         {
@@ -429,9 +432,9 @@ int check_inode_addr(uint* address)
             bit_to_check = (byte_to_check >> x)%2;
 
             // bit !=0 => when DataBlock marked as in-use in BitMap
-            if (address[current_block]!=0){
+            if (address[current_block]==1){
                 // address[current_block] is 0 when it is not in use
-                if(bit_to_check)
+                if(bit_to_check==0)
                 {
                     printf("ERROR: address used by inode but marked free in bitmap.\n");
                     return 1;
@@ -529,15 +532,13 @@ int main(int argc, char *argv[])
     //error 1 
     if(corrupted_inode()==1)
         return 1;
-    //error3 starts
-
-    if(check_root()==1)
-        return 1;
-    //error3 ends
-
     // if(check_directory(address)==1){
-    //     return 1;
+    //      return 1;
     // }
+    // //error3 starts
+    // if(check_root()==1)
+    //     return 1;
+    //error3 ends
     // error 5 
     if(check_inode_addr(address)==1)
         return 1;
@@ -569,7 +570,9 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-
+    //error3 starts
+    if(check_root()==1)
+        return 1;
     printf("Your File System is intact\n");
     return 0;
 }
