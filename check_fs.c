@@ -406,45 +406,7 @@ int check_block_inuse(uint* address){
     } 
     return 0;
 }
-/*error 5*/
-int check_inode_addr(uint* address)
-{
-    int db_inbmap =sb.bmapstart*BSIZE + sb.size/8 - sb.nblocks/8;
-    
-    // Current address
-    int current_block=(sb.bmapstart + 1);
 
-    // Seeking cursor to the first byte of DataBlock in BitMap
-    lseek(fsfd, db_inbmap, SEEK_SET);
-
-    uint bit_to_check; 
-    int byte_to_check;
-    
-    // taking Bytewise addresses from BitMap
-    for (int i=current_block; i<sb.size; i+=8)
-    {
-
-        // reading 1 Byte => it will contain usage info. about 8 DataBlocks
-        read(fsfd, &byte_to_check, 1);
-        for (int x=0; x<8; x++){
-
-            //  Reading last bit step-by-step each time in the corresponding Byte   
-            bit_to_check = (byte_to_check >> x)%2;
-
-            // bit !=0 => when DataBlock marked as in-use in BitMap
-            if (address[current_block]==1){
-                // address[current_block] is 0 when it is not in use
-                if(bit_to_check==0)
-                {
-                    printf("ERROR: address used by inode but marked free in bitmap.\n");
-                    return 1;
-                }
-            }
-            current_block++;
-        }
-    } 
-    return 0;
-}
 
 // For error 9
 int check_inum_indir(uint addr, ushort inum){   
@@ -508,6 +470,49 @@ int inode_check_directory(uint target_inum){
     return 1;
 }
 
+// Error 5
+int check_inode_addr(struct dinode current_inode){
+
+        uint addr, byte;
+
+        for (int i=0; i < NDIRECT+1; i++){                                                      
+            if (current_inode.addrs[i]==0) {continue;}
+            lseek(fsfd, sb.bmapstart*BSIZE + current_inode.addrs[i]/8,SEEK_SET);
+            read(fsfd, &byte, 1);
+
+            byte=byte >> current_inode.addrs[i]%8;
+            byte=byte%2;
+            
+            if(byte==0) {
+                printf("ERROR: address used by inode but marked free in bitmap.\n");
+                return 1;
+            }
+        }
+
+        if(current_inode.addrs[NDIRECT] != 0){                                         
+
+            for(int x=0; x<NINDIRECT; x++){                                                    
+
+                lseek(fsfd, current_inode.addrs[NDIRECT] * BSIZE + x*sizeof(uint), SEEK_SET); 
+                read(fsfd, &addr, sizeof(uint)) != sizeof(uint);
+
+                if (addr!=0){            
+                    lseek(fsfd, sb.bmapstart*BSIZE + addr/8,SEEK_SET); 
+                    read(fsfd, &byte, 1); 
+                    byte=byte >> current_inode.addrs[x]%8;
+                    byte=byte%2;
+                    if(byte==0) {
+                        printf("ERROR: address used by inode but marked free in bitmap.\n");
+                        return 1;
+                    }
+                }
+            }
+        
+        }
+        return 0;
+}
+
+
 int main(int argc, char *argv[])
 {   
 
@@ -539,10 +544,7 @@ int main(int argc, char *argv[])
     // if(check_root()==1)
     //     return 1;
     //error3 ends
-    // error 5 
-    if(check_inode_addr(address)==1)
-        return 1;
-    //
+
     // error6 starts
     if (check_block_inuse(address)){
         return 1;
@@ -561,6 +563,9 @@ int main(int argc, char *argv[])
         // only checking if the inode in use
         if (current_inode.type!=0){
             if (inode_check_directory(current_inum)){
+            return 1;
+            }
+            if (check_inode_addr(current_inode)){
             return 1;
             }
         }    
