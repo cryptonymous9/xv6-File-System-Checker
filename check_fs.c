@@ -17,104 +17,6 @@
 int fsfd;
 struct superblock sb;
 
-//11:
-//Related to error 11
-int traverse_dir_by_inum(uint addr, ushort inum)
-{
-    if(lseek(fsfd, addr*BSIZE, SEEK_SET) != addr*BSIZE)
-    {
-        perror("lseek");
-        exit(1);
-    }
-    struct dirent buf;
-    int i;
-    for(int i=0;i<BSIZE/sizeof(struct dirent);i++)
-    {
-        read(fsfd,&buf,sizeof(struct dirent));
-        if(buf.inum==inum)
-        {
-            return 0;
-        }            
-    }
-    return 1;
-}
-
-
-//Related to error 11
-int check_links(struct dinode current_inode, uint current_inum)
-{
-    int inum;
-    int count = 0;
-    
-    struct dinode in;
-    for(inum = 0; inum < sb.ninodes; inum++)
-    {
-        if(inum == current_inum && inum != 1)
-        {
-            continue;
-        }
-        if(lseek(fsfd, sb.inodestart * BSIZE + inum * sizeof(struct dinode), SEEK_SET) != sb.inodestart * BSIZE + inum * sizeof(struct dinode))
-        {
-            perror("lseek");
-            exit(1);
-        }
-        if(read(fsfd, &in, sizeof(struct dinode)) != sizeof(struct dinode))
-        {
-            perror("read");
-            exit(1);
-        }
-        if(in.type != T_DIR)
-        {
-            continue;
-        }
-
-        int x;
-        for(x = 0; x <NDIRECT; x++)
-        {
-            if(in.addrs[x] == 0)
-            {
-                continue;    
-            }
-            if(0 == traverse_dir_by_inum(in.addrs[x], current_inum))
-            {
-                count++;
-            }
-        }
-
-        int y;
-        uint directory_address;
-        if(in.addrs[NDIRECT] != 0)
-        {
-            for(y = 0; y <NINDIRECT; y++)
-            {
-                if(lseek (fsfd, in.addrs[NDIRECT] * BSIZE + y*sizeof(uint), SEEK_SET) != in.addrs[NDIRECT] * BSIZE + y* sizeof(uint))
-                {
-                    perror("lssek");
-                    exit(1);
-                }
-                if(read(fsfd, &directory_address, sizeof(uint)) != sizeof(uint))
-                {
-                    perror("read");
-                    exit(1);
-                }
-                if(0 == directory_address)
-                {
-                    continue;
-                }
-                if(0 == traverse_dir_by_inum(directory_address, current_inum))
-                {
-                    count++;
-                }
-            }
-        }
-    }
-
-
-    return count;
-}
-
-
-
 
 //struct dinode inode;
 /*This checks for corrupted i node */
@@ -138,15 +40,15 @@ int corrupted_inode()        //This code works NO need to mess with it.
         //This checks for error 11
         //Refrence counts (number of links) for regular files match the number of times file is referred to in directories (i.e., hard links work correctly)
         //ERROR: bad refrence count for file
-        if(inode.type == T_FILE)
-        {
-            if(inode.nlink != check_links(inode, i))
-            {
-                printf("ERROR: bad reference count for file.");
-                close(fsfd);
-                return 1;
-            }
-        }
+        // if(inode.type == T_FILE)
+        // {
+        //     if(inode.nlink != check_links(inode, i))
+        //     {
+        //         printf("ERROR: bad reference count for file.");
+        //         close(fsfd);
+        //         return 1;
+        //     }
+        // }
 
         //This checks for error 12
         //No extra links allowed for directories, each directory only appears in one other directory
@@ -442,6 +344,101 @@ int check_block_inuse(uint* address){
     return 0;
 }
 
+//Related to error 11
+int traverse_dir_by_inum(uint addr, ushort inum)
+{
+    if(lseek(fsfd, addr*BSIZE, SEEK_SET) != addr*BSIZE)
+    {
+        perror("lseek");
+        exit(1);
+    }
+    struct dirent buf;
+    int i;
+    for(int i=0;i<BSIZE/sizeof(struct dirent);i++)
+    {
+        read(fsfd,&buf,sizeof(struct dirent));
+        if(buf.inum==inum)
+        {
+            return 0;
+        }            
+    }
+    return 1;
+}
+
+
+//Related to error 11
+int check_links(struct dinode current_inode, uint current_inum)
+{
+    int inum;
+    int count = 0;
+    
+    struct dinode in;
+    for(inum = 0; inum < sb.ninodes; inum++)
+    {
+        if(inum == current_inum && inum != 1)
+        {
+            continue;
+        }
+        if(lseek(fsfd, sb.inodestart * BSIZE + inum * sizeof(struct dinode), SEEK_SET) != sb.inodestart * BSIZE + inum * sizeof(struct dinode))
+        {
+            perror("lseek");
+            exit(1);
+        }
+        if(read(fsfd, &in, sizeof(struct dinode)) != sizeof(struct dinode))
+        {
+            perror("read");
+            exit(1);
+        }
+        if(in.type != T_DIR)
+        {
+            continue;
+        }
+
+        int x;
+        for(x = 0; x <NDIRECT; x++)
+        {
+            if(in.addrs[x] == 0)
+            {
+                continue;    
+            }
+            if(0 == traverse_dir_by_inum(in.addrs[x], current_inum))
+            {
+                count++;
+            }
+        }
+
+        int y;
+        uint directory_address;
+        if(in.addrs[NDIRECT] != 0)
+        {
+            for(y = 0; y <NINDIRECT; y++)
+            {
+                if(lseek (fsfd, in.addrs[NDIRECT] * BSIZE + y*sizeof(uint), SEEK_SET) != in.addrs[NDIRECT] * BSIZE + y* sizeof(uint))
+                {
+                    perror("lssek");
+                    exit(1);
+                }
+                if(read(fsfd, &directory_address, sizeof(uint)) != sizeof(uint))
+                {
+                    perror("read");
+                    exit(1);
+                }
+                if(0 == directory_address)
+                {
+                    continue;
+                }
+                if(0 == traverse_dir_by_inum(directory_address, current_inum))
+                {
+                    count++;
+                }
+            }
+        }
+    }
+
+
+    return count;
+}
+
 // For error 9
 int check_inum_indir(uint addr, ushort inum){   
     lseek(fsfd, addr*BSIZE, SEEK_SET);
@@ -553,7 +550,7 @@ int main(int argc, char *argv[])
         read(fsfd, buf, sizeof(struct dinode))!=sizeof(struct dinode);
         memmove(&current_inode, buf, sizeof(current_inode));
 
-        // only checking if the inode in use
+        // only checking if the inode is in use
         if (current_inode.type!=0){
             if (inode_check_directory(current_inum)){
             return 1;
