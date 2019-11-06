@@ -111,8 +111,9 @@ int main(int argc, char *argv[]){
   sb.nlog = xint(nlog);
   sb.logstart = xint(2);
 
+  printf("Generating image with error %d\n",error_no);
+
   // ERROR 1: bad inode
-  printf("%d ",error_no);
   if(error_no!=1){
   
   sb.inodestart = xint(2+nlog);
