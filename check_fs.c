@@ -258,7 +258,7 @@ int check_directory(uint *address)
             {
                 if (dot_inode!=-1 && dot_inode!=i+1)
                 {
-                    printf("ERROR 1: directory not properly formatted.\n");
+                    printf("ERROR: directory not properly formatted.\n");
                     return 1;
                 }
                 else if(inode.addrs[NDIRECT]!=0)
@@ -277,20 +277,20 @@ int check_directory(uint *address)
                     }
                     if(dot_inode!=i+1 || dot_inode==-1 || ddot_inode==-1)
                     {
-                        printf("ERROR 2: directory not properly formatted.\n");
+                        printf("ERROR: directory not properly formatted.\n");
                         return 1;
                     }
                 }
                 else
                 {
-                    printf("ERROR 3: directory not properly formatted.\n");
+                    printf("ERROR: directory not properly formatted.\n");
                     // printf("%d %d %d\n", dot_inode, ddot_inode, inode.addrs[NDIRECT]);
                     return 1;
                 }
             }
             if(dot_inode!=i || dot_inode==-1 || ddot_inode==-1)
             {
-                printf("ERROR 4: directory not properly formatted.\n");
+                printf("ERROR: directory not properly formatted.\n");
                 return 1;
             }
         }
@@ -312,7 +312,7 @@ int check_root()
         close(fsfd);
         return 1;
     }
-    /*else
+    else
     {
         int dot_inode=-1;
         int ddot_inode=-1;
@@ -359,7 +359,7 @@ int check_root()
             printf("ERROR: root directory does not exist.\n");
             return 1;
         }
-    }*/
+    }
     return 0;
 }
 
