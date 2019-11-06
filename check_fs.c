@@ -226,44 +226,6 @@ int check_address(uint* address, struct dinode inode)
     return 0;
 }
 
-/*error 5*/
-int check_inode_addr(struct dinode inode)
-{
-    uint buf;
-    uint abuf;
-    int offset;
-    for(int j=0;j<NDIRECT;j++)
-    {
-        lseek(fsfd,sb.bmapstart+inode.addrs[j]/8,SEEK_SET);
-        read(fsfd,&buf,1);
-        offset=inode.addrs[j]%8;
-        buf=(buf>>offset)%2;
-        if(buf==0)
-        {
-            printf("ERROR: address used by inode but marked free in bitmap.\n");
-            return 1;
-        }
-    }
-    if(inode.addrs[NDIRECT]!=0)
-    {
-        lseek(fsfd,inode.addrs[NDIRECT]*BSIZE,SEEK_SET);
-        for(int i=0;i<NINDIRECT;i++)
-        {
-            read(fsfd,&abuf,sizeof(uint));
-            offset=abuf%8;
-            lseek(fsfd,sb.bmapstart+abuf/8,SEEK_SET);
-            read(fsfd,&buf,1);
-            buf=(buf>>offset)%2;
-            if(buf==0)
-            {
-                printf("ERROR: address used by inode but marked free in bitmap.\n");
-                return 1;
-            }
-        }
-    }
-}
-
-
 /*ERROR 4: Check the directories for errors*/
 int check_directory(uint *address)
 {
