@@ -128,6 +128,54 @@ int check_address(uint* address, struct dinode inode)
     return 0;
 }
 
+int check_inode_ref(struct dinode inode)
+{
+    struct dirent dir_entry;
+    struct dinode ref_node;
+    for (int i=0;i<NDIRECT;i++)
+    {
+        if(inode.addrs[i]==0)
+            continue;
+        for(int j=0;j<BSIZE/sizeof(struct dirent);j++)
+        {
+            lseek(fsfd,inode.addrs[i]*BSIZE+j*sizeof(struct dirent),SEEK_SET);
+            read(fsfd,&dir_entry,sizeof(struct dirent));
+            if(dir_entry.inum==0)
+            {
+                continue;
+            }
+            lseek(fsfd,sb.inodestart*BSIZE+dir_entry.inum*sizeof(struct dinode),SEEK_SET);
+            read(fsfd,&ref_node,sizeof(struct dinode));
+            if(ref_node.type==0)
+            {
+                printf("ERROR: inode referred to in directory but marked free.\n");
+                return 1;
+            }
+        }
+    }
+    if(inode.addrs[NDIRECT]!=0)
+    {
+        lseek(fsfd,inode.addrs[NDIRECT]*BSIZE,SEEK_SET);
+        for (int k=0;k<BSIZE/sizeof(struct dirent);k++)
+        {
+            lseek(fsfd,inode.addrs[NDIRECT]*BSIZE+k*sizeof(struct dirent),SEEK_SET);
+            read(fsfd,&dir_entry,sizeof(struct dirent));
+            if(dir_entry.inum==0)
+            {
+                continue;
+            }
+            lseek(fsfd,sb.inodestart*BSIZE+dir_entry.inum*sizeof(struct dinode),SEEK_SET);
+            read(fsfd,&ref_node,sizeof(struct dinode));
+            if(ref_node.type==0)
+            {
+                printf("ERROR: inode referred to in directory but marked free.\n");
+                return 1;
+            }
+        }
+    }
+}
+
+
 /*error 5*/
 int check_inode_addr(struct dinode inode)
 {
@@ -181,6 +229,11 @@ int check_directory(uint *address)
         memmove(&inode, buf, sizeof(struct dinode));
         if (check_address(address, inode))
         {
+            return 1;
+        }
+        if (check_inode_ref(inode))
+        {
+            //printf("printing\n");
             return 1;
         }
         if(inode.type==T_DIR)
