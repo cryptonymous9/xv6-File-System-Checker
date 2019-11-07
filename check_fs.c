@@ -21,11 +21,7 @@ struct superblock sb;
 //Related to error 11
 int traverse_dir_by_inum(uint addr, ushort inum)
 {
-    if(lseek(fsfd, addr*BSIZE, SEEK_SET) != addr*BSIZE)
-    {
-        perror("lseek");
-        exit(1);
-    }
+    lseek(fsfd, addr*BSIZE, SEEK_SET);
     struct dirent buf;
     int i;
     for(int i=0;i<BSIZE/sizeof(struct dirent);i++)
@@ -53,16 +49,8 @@ int check_links(struct dinode current_inode, uint current_inum)
         {
             continue;
         }
-        if(lseek(fsfd, sb.inodestart * BSIZE + inum * sizeof(struct dinode), SEEK_SET) != sb.inodestart * BSIZE + inum * sizeof(struct dinode))
-        {
-            perror("lseek");
-            exit(1);
-        }
-        if(read(fsfd, &in, sizeof(struct dinode)) != sizeof(struct dinode))
-        {
-            perror("read");
-            exit(1);
-        }
+        fsfd, sb.inodestart * BSIZE + inum * sizeof(struct dinode), SEEK_SET);
+        read(fsfd, &in, sizeof(struct dinode));
         if(in.type != T_DIR)
         {
             continue;
@@ -87,16 +75,8 @@ int check_links(struct dinode current_inode, uint current_inum)
         {
             for(y = 0; y <NINDIRECT; y++)
             {
-                if(lseek (fsfd, in.addrs[NDIRECT] * BSIZE + y*sizeof(uint), SEEK_SET) != in.addrs[NDIRECT] * BSIZE + y* sizeof(uint))
-                {
-                    perror("lssek");
-                    exit(1);
-                }
-                if(read(fsfd, &directory_address, sizeof(uint)) != sizeof(uint))
-                {
-                    perror("read");
-                    exit(1);
-                }
+                lseek (fsfd, in.addrs[NDIRECT] * BSIZE + y*sizeof(uint), SEEK_SET);
+                read(fsfd, &directory_address, sizeof(uint));
                 if(0 == directory_address)
                 {
                     continue;
@@ -181,6 +161,10 @@ int find_directory_by_name(uint addr, char *name)
 }
 
 /*Error 7/8 each address must be used only once. Error 2 bad direct or indirect address*/
+/*THIS function traveses through all the addresses pointed to by an inode and if that address 
+has not been previously encountered it sets corresponding address array valuer to 1.
+If it has been encountered print error
+Also, checks the range of the addresses.*/
 int check_address(uint* address, struct dinode inode)
 { 
     int dstart=sb.bmapstart+1; 
@@ -227,6 +211,8 @@ int check_address(uint* address, struct dinode inode)
 }
 
 /*ERROR 4: Check the directories for errors*/
+/*This function loops through all the inodes and if it is a directory, it searches for . and ..
+If they don't exist or . points to something else prints error.*/
 int check_directory(uint *address)
 {
     struct dinode inode;
@@ -300,7 +286,8 @@ int check_directory(uint *address)
     }
     return 0;
 }
-
+/*Error 3: this function checks if inode 1 is a directory and looks for . and .. in it.
+here . and .. should point to inode 1. If not, print error*/
 int check_root()
 {
     struct dinode inode;
@@ -367,7 +354,8 @@ int check_root()
 }
 
 
-
+/*Error 6: check address array entry and corresponding bitmap entry, both must hold same value.
+If not print error*/
 int check_block_inuse(uint* address){
 
     // Position od datablock in Bitmap
