@@ -97,7 +97,10 @@ int check_links(struct dinode current_inode, uint current_inum)
 
 
 //struct dinode inode;
-/*This checks for corrupted i node */
+/*For Every inode check whether it belongs to one of the given three catogeries or not.
+if not print error. Check if nlinks to a directory inode, if it is greater than 1 print error.
+For file inode compare nlinks to number of time it is referenced in directories, 
+if there is a mismatch print error.*/
 int corrupted_inode()        //This code works NO need to mess with it.
 {
     struct dinode inode;
@@ -140,7 +143,8 @@ int corrupted_inode()        //This code works NO need to mess with it.
     return 0;
 }
 
-/*Function to find directory inode by name*/
+/*Function to find directory inode by name. This takes an address and name as input and 
+searches for that directory entry in that particular address*/
 int find_directory_by_name(uint addr, char *name)
 {
     struct dinode inode;
@@ -396,7 +400,8 @@ int check_block_inuse(uint* address){
 }
 
 
-// For error 9
+/*For error 9, given a directory inode address go through all the entries
+to see if the given inode is referenced or not*/
 int check_inum_indir(uint addr, ushort inum){   
     lseek(fsfd, addr*BSIZE, SEEK_SET);
     struct dirent buf;
@@ -409,7 +414,8 @@ int check_inum_indir(uint addr, ushort inum){
     return 1;
 }   
 
-// Error 9:
+/*Error 9: For every file inode this function does a directory lookup, if the inode is not refernd
+anywhere, print error*/
 int inode_check_directory(uint target_inum){
 
     // DIR-inode to compare
@@ -458,7 +464,8 @@ int inode_check_directory(uint target_inum){
     return 1;
 }
 
-// Error 5
+/*for every address in a given inode check corresponding bitmap entry if any of the 
+corresponding bitmap entry is 0, print error*/
 int check_inode_addr(struct dinode current_inode){
 
         uint addr, byte;
