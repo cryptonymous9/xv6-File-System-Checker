@@ -17,8 +17,10 @@
 int fsfd;
 struct superblock sb;
 
-//11:
-//Related to error 11
+/*Iterate over all inodes. For those of type file, iterate over its direct and indirect links, 
+return the count of number of files addressed (directly or indirectly) */
+
+// Helper for error 11
 int traverse_dir_by_inum(uint addr, ushort inum)
 {
     lseek(fsfd, addr*BSIZE, SEEK_SET);
@@ -49,7 +51,7 @@ int check_links(struct dinode current_inode, uint current_inum)
         {
             continue;
         }
-        fsfd, sb.inodestart * BSIZE + inum * sizeof(struct dinode), SEEK_SET);
+        lseek(fsfd, sb.inodestart * BSIZE + inum * sizeof(struct dinode), SEEK_SET);
         read(fsfd, &in, sizeof(struct dinode));
         if(in.type != T_DIR)
         {
@@ -96,12 +98,15 @@ int check_links(struct dinode current_inode, uint current_inum)
 
 
 
-//struct dinode inode;
-/*For Every inode check whether it belongs to one of the given three catogeries or not.
-if not print error. Check if nlinks to a directory inode, if it is greater than 1 print error.
+/*
+For every inode check whether it belongs to one of the given three catogeries or not.
+If not print error. 
+
+Check if nlinks to a directory inode, if it is greater than 1 print error.
 For file inode compare nlinks to number of time it is referenced in directories, 
 if there is a mismatch print error.*/
-int corrupted_inode()        //This code works NO need to mess with it.
+
+int corrupted_inode()       
 {
     struct dinode inode;
     char buf[sizeof(struct dinode)];
@@ -119,7 +124,8 @@ int corrupted_inode()        //This code works NO need to mess with it.
         }
         
         //This checks for error 11
-        //Refrence counts (number of links) for regular files match the number of times file is referred to in directories (i.e., hard links work correctly)
+        //Reference counts (number of links) for regular files match the number of times
+        //file is referred to in directories (i.e., hard links work correctly)
         //ERROR: bad refrence count for file
         if(inode.type == T_FILE)
         {
