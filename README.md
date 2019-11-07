@@ -6,6 +6,7 @@ A File System Checker, which reads in a file system image and makes sure that it
 
 ## Usage
 Run "corrupt_fs_check.sh" to create a corrupted File System and run the File System Checker on it.
+To check for error no. k; run `./corrupt_fs_check [img file] k`
 
 ## References
 --
