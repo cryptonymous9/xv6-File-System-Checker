@@ -65,7 +65,7 @@ int check_links(struct dinode current_inode, uint current_inum)
             {
                 continue;    
             }
-            if(0 == traverse_dir_by_inum(in.addrs[x], current_inum))
+            if(traverse_dir_by_inum(in.addrs[x], current_inum)== 0)
             {
                 count++;
             }
@@ -79,11 +79,11 @@ int check_links(struct dinode current_inode, uint current_inum)
             {
                 lseek (fsfd, in.addrs[NDIRECT] * BSIZE + y*sizeof(uint), SEEK_SET);
                 read(fsfd, &directory_address, sizeof(uint));
-                if(0 == directory_address)
+                if( directory_address == 0)
                 {
                     continue;
                 }
-                if(0 == traverse_dir_by_inum(directory_address, current_inum))
+                if(traverse_dir_by_inum(directory_address, current_inum) == 0)
                 {
                     count++;
                 }
