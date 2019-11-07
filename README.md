@@ -15,8 +15,8 @@ gcc -o check_fs check_fs.c
 ./check_fs e[error number].img
 ```
 ## References
-Gantt Charts made using https://app.instagantt.com/r#
-https://medium.com/@ppan.brian/file-systems-in-xv6-8603fdd33dd6
-MIT xv6 book: https://pdos.csail.mit.edu/6.828/2012/xv6/book-rev7.pdf
+Gantt Charts made using https://app.instagantt.com/r# <br>
+https://medium.com/@ppan.brian/file-systems-in-xv6-8603fdd33dd6 <br>
+MIT xv6 book: https://pdos.csail.mit.edu/6.828/2012/xv6/book-rev7.pdf <br>
 
 --
